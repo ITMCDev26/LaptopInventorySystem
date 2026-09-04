@@ -126,7 +126,7 @@
   .login-footnote{margin-top:20px;font-size:11px;color:var(--text-faint);text-align:center;}
 
   /* ---------- APP SHELL ---------- */
-  #appScreen{display:none;min-height:100vh;}
+  #appScreen{display:block;min-height:100vh;}
   .shell{display:flex;min-height:100vh;}
 
   .sidebar{

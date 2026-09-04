@@ -15,36 +15,6 @@
     ⚠ Set <code>API_URL</code> at the top of <code>script.js</code> to your deployed Apps Script Web App URL before this will work.
   </div>
 
-  <!-- ============ LOGIN SCREEN ============ -->
-  <div id="loginScreen">
-    <div class="login-card">
-      <div class="brand-mark">
-        <div class="logo">LA</div>
-        <div>
-          <div class="name">Laptop Asset Manager</div>
-          <div class="tag">IT Asset Control</div>
-        </div>
-      </div>
-      <h2>Admin Sign In</h2>
-      <div class="login-sub">Enter your credentials to access the asset registry.</div>
-
-      <div class="login-error" id="loginError"></div>
-
-      <form id="loginForm">
-        <div class="field">
-          <label>Username</label>
-          <input type="text" id="loginUsername" autocomplete="username" required>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="loginPassword" autocomplete="current-password" required>
-        </div>
-        <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
-      </form>
-      <div class="login-footnote">Data is stored and synced directly to your Google Sheet.</div>
-    </div>
-  </div>
-
   <!-- ============ APP SHELL ============ -->
   <div id="appScreen">
     <div class="shell">
@@ -67,14 +37,10 @@
 
         <div class="sidebar-spacer"></div>
 
-        <div class="user-chip">
-          <div class="avatar" id="userAvatar">A</div>
-          <div class="info">
-            <div class="u-name" id="userName">—</div>
-            <div class="u-role" id="userRole">—</div>
-          </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Your Name (for records)</label>
+          <input type="text" id="processedByName" placeholder="Optional" class="mono">
         </div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%;" id="logoutBtn">Log Out</button>
       </div>
 
       <!-- MAIN -->

@@ -2,11 +2,9 @@
 // CONFIG — paste your deployed Apps Script Web App URL here.
 // (Deploy → New deployment → Web app → copy the URL it gives you.)
 // =====================================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9KTX1w-qAAxYQtmc2cDe534hrA0X6_wu6Y_gLHIQCjuvxicg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwv_SpnxA4aOPMzYxtHJYm0DwqTcFAmLHVa16Cm69x8KcONCXdQUAXd2RAxKzh3G4WaqA/exec';
 
 (function(){
-  let TOKEN = sessionStorage.getItem('laptopMgr_token') || null;
-  let USER = null;
 
   // ---------------- CONFIG CHECK ----------------
   if(!API_URL || API_URL.indexOf('PASTE_YOUR') === 0){
@@ -23,13 +21,17 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9K
       // Apps Script web apps don't handle CORS preflight (OPTIONS) requests,
       // so we keep this a "simple request" (text/plain) to avoid the browser
       // sending a preflight. e.postData.contents on the server still parses fine.
-      body: JSON.stringify({ action: action, token: TOKEN, payload: payload || {} })
+      body: JSON.stringify({ action: action, payload: payload || {} })
     });
     const json = await res.json();
     if(!json.ok){
       throw new Error(json.error || 'Request failed');
     }
     return json.data;
+  }
+
+  function processedBy(){
+    return $('processedByName') ? $('processedByName').value.trim() : '';
   }
 
   function fmtDate(d){
@@ -71,73 +73,23 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9K
   }
   function handleError(err, alertEl){
     const msg = err && err.message ? err.message : String(err);
-    if(msg.indexOf('SESSION_EXPIRED') !== -1){
-      toast('Session expired. Please sign in again.', 'error');
-      doLogout();
-      return;
-    }
     if(alertEl){ showAlert(alertEl, msg); } else { toast('Error: ' + msg, 'error'); }
   }
 
-  // ---------------- LOGIN ----------------
-  $('loginForm').addEventListener('submit', async function(e){
-    e.preventDefault();
-    const u = $('loginUsername').value.trim();
-    const p = $('loginPassword').value;
-    const btn = $('loginBtn');
-    $('loginError').style.display = 'none';
-    setBtnLoading(btn, true, 'Signing in…');
+  // ---------------- APP INIT (no login — straight to dashboard) ----------------
+  document.getElementById('appScreen').style.display = 'block';
+  loadDashboard();
 
-    try{
-      const res = await apiCall('login', { username: u, password: p });
-      setBtnLoading(btn, false, 'Sign In');
-      if(res.success){
-        TOKEN = res.token;
-        USER = { fullName: res.fullName, role: res.role };
-        sessionStorage.setItem('laptopMgr_token', TOKEN);
-        sessionStorage.setItem('laptopMgr_user', JSON.stringify(USER));
-        enterApp();
-      } else {
-        $('loginError').textContent = res.message || 'Login failed.';
-        $('loginError').style.display = 'block';
-      }
-    } catch(err){
-      setBtnLoading(btn, false, 'Sign In');
-      $('loginError').textContent = 'Error: ' + err.message;
-      $('loginError').style.display = 'block';
-    }
-  });
-
-  function doLogout(){
-    if(TOKEN) apiCall('logout', {}).catch(()=>{});
-    TOKEN = null; USER = null;
-    sessionStorage.removeItem('laptopMgr_token');
-    sessionStorage.removeItem('laptopMgr_user');
-    $('appScreen').style.display = 'none';
-    $('loginScreen').style.display = 'flex';
-    $('loginForm').reset();
-  }
-  $('logoutBtn').addEventListener('click', doLogout);
-
-  function enterApp(){
-    $('loginScreen').style.display = 'none';
-    $('appScreen').style.display = 'block';
-    $('userName').textContent = USER.fullName;
-    $('userRole').textContent = USER.role;
-    $('userAvatar').textContent = (USER.fullName || 'A').substring(0,1).toUpperCase();
-    loadDashboard();
-  }
-
-  // Restore session on page load if a token is already stored
-  (function tryRestoreSession(){
-    if(TOKEN){
-      const stored = sessionStorage.getItem('laptopMgr_user');
-      if(stored){
-        USER = JSON.parse(stored);
-        enterApp();
-      }
-    }
+  // remember "processed by" name across visits, for convenience
+  (function restoreProcessedBy(){
+    const saved = localStorage.getItem('laptopMgr_processedBy');
+    if(saved && $('processedByName')) $('processedByName').value = saved;
   })();
+  if($('processedByName')){
+    $('processedByName').addEventListener('change', function(){
+      localStorage.setItem('laptopMgr_processedBy', this.value.trim());
+    });
+  }
 
   // ---------------- NAV ----------------
   document.querySelectorAll('.nav-item').forEach(function(item){
@@ -209,7 +161,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9K
       poNumber: $('reg_poNumber').value.trim(),
       datePurchased: $('reg_datePurchased').value,
       controlNumber: $('reg_controlNumber').value.trim(),
-      remarks: $('reg_remarks').value.trim()
+      remarks: $('reg_remarks').value.trim(),
+      processedBy: processedBy()
     };
     setBtnLoading(btn, true, 'Saving…');
     try{
@@ -264,7 +217,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9K
       toEmployee: $('tr_toEmployee').value.trim(),
       toEmployeeNo: $('tr_toEmployeeNo').value.trim(),
       townshipUnit: $('tr_townshipUnit').value.trim(),
-      remarks: $('tr_remarks').value.trim()
+      remarks: $('tr_remarks').value.trim(),
+      processedBy: processedBy()
     };
     setBtnLoading(btn, true, 'Processing…');
     try{
@@ -361,7 +315,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9K
         return '<div class="timeline-item">' +
           '<div class="t-icon">'+(h.reason === 'Resigned' ? '⏏' : (h.reason === 'New Registration' ? '＋' : '⇄'))+'</div>' +
           '<div class="t-main"><div class="t-title">'+title+'</div>' +
-          '<div class="t-sub">'+h.reason+(h.remarks ? ' · '+h.remarks : '')+' · by '+h.processedBy+'</div></div>' +
+          '<div class="t-sub">'+h.reason+(h.remarks ? ' · '+h.remarks : '')+(h.processedBy ? ' · by '+h.processedBy : '')+'</div></div>' +
           '<div class="t-time">'+fmtDateTime(h.timestamp)+'</div></div>';
       }).join('');
     }
