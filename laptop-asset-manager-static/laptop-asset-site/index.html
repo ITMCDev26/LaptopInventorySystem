@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laptop Asset Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ CONFIG WARNING (shown until script.js has a real API_URL) ============ -->
+  <div id="configWarning" style="display:none;position:fixed;top:0;left:0;right:0;z-index:1000;
+      background:#3a1414;color:#ffb4b4;padding:10px 16px;text-align:center;font-size:13px;
+      font-family:'JetBrains Mono',monospace;border-bottom:1px solid #7a2424;">
+    ⚠ Set <code>API_URL</code> at the top of <code>script.js</code> to your deployed Apps Script Web App URL before this will work.
+  </div>
+
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="brand-mark">
+        <div class="logo">LA</div>
+        <div>
+          <div class="name">Laptop Asset Manager</div>
+          <div class="tag">IT Asset Control</div>
+        </div>
+      </div>
+      <h2>Admin Sign In</h2>
+      <div class="login-sub">Enter your credentials to access the asset registry.</div>
+
+      <div class="login-error" id="loginError"></div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="loginUsername" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPassword" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+      </form>
+      <div class="login-footnote">Data is stored and synced directly to your Google Sheet.</div>
+    </div>
+  </div>
+
+  <!-- ============ APP SHELL ============ -->
+  <div id="appScreen">
+    <div class="shell">
+
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="brand-mark">
+          <div class="logo">LA</div>
+          <div>
+            <div class="name" style="font-size:14.5px;">Asset Manager</div>
+            <div class="tag">v1.0</div>
+          </div>
+        </div>
+
+        <div class="nav-item active" data-view="dashboard"><span class="ic">◆</span> Dashboard</div>
+        <div class="nav-item" data-view="register"><span class="ic">＋</span> Register Laptop</div>
+        <div class="nav-item" data-view="transfer"><span class="ic">⇄</span> Transfer / Exit</div>
+        <div class="nav-item" data-view="search"><span class="ic">⌕</span> Search</div>
+        <div class="nav-item" data-view="inventory"><span class="ic">▤</span> All Inventory</div>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="user-chip">
+          <div class="avatar" id="userAvatar">A</div>
+          <div class="info">
+            <div class="u-name" id="userName">—</div>
+            <div class="u-role" id="userRole">—</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%;" id="logoutBtn">Log Out</button>
+      </div>
+
+      <!-- MAIN -->
+      <div class="main">
+
+        <!-- DASHBOARD VIEW -->
+        <div class="view active" id="view-dashboard">
+          <div class="topbar">
+            <div>
+              <h1>Dashboard</h1>
+              <div class="sub">Fleet overview and recent activity</div>
+            </div>
+            <div class="badge"><span class="badge-dot"></span> Live · Google Sheets</div>
+          </div>
+
+          <div class="grid grid-4" style="margin-bottom:16px;">
+            <div class="card stat-card accent">
+              <div class="stat-label">Total Laptops</div>
+              <div class="stat-value" id="statTotal">—</div>
+              <div class="stat-foot">All registered units</div>
+            </div>
+            <div class="card stat-card ok">
+              <div class="stat-label">Active</div>
+              <div class="stat-value" id="statActive">—</div>
+              <div class="stat-foot">Currently assigned</div>
+            </div>
+            <div class="card stat-card warn">
+              <div class="stat-label">Pending Reassignment</div>
+              <div class="stat-value" id="statPending">—</div>
+              <div class="stat-foot">Awaiting new owner</div>
+            </div>
+            <div class="card stat-card warn">
+              <div class="stat-label">Nearing 5-Year Life</div>
+              <div class="stat-value" id="statAging">—</div>
+              <div class="stat-foot">4.5+ years since purchase</div>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="card">
+              <h3><span class="ic">▤</span> Recent Transfers &amp; Clearances</h3>
+              <div id="recentTransfers"></div>
+            </div>
+            <div class="card">
+              <h3><span class="ic">◆</span> Fleet by Brand</h3>
+              <div id="brandChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REGISTER VIEW -->
+        <div class="view" id="view-register">
+          <div class="topbar">
+            <div>
+              <h1>Register New Laptop</h1>
+              <div class="sub">Add a new unit to the registry</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="alert alert-success" id="registerSuccess">Laptop registered successfully.</div>
+            <div class="alert alert-error" id="registerError"></div>
+            <form id="registerForm">
+              <div class="form-grid">
+                <div class="field">
+                  <label>Accountable Employee</label>
+                  <input type="text" id="reg_accountableEmployee" required>
+                </div>
+                <div class="field">
+                  <label>Employee No.</label>
+                  <input type="text" id="reg_employeeNo" required>
+                </div>
+                <div class="field">
+                  <label>Township / Unit</label>
+                  <input type="text" id="reg_townshipUnit" required>
+                </div>
+                <div class="field">
+                  <label>Brand / Model</label>
+                  <input type="text" id="reg_brand" placeholder="e.g. Dell Latitude 5420" required>
+                </div>
+                <div class="field">
+                  <label>Serial No.</label>
+                  <input type="text" id="reg_serialNo" class="mono" required>
+                </div>
+                <div class="field">
+                  <label>PO Number</label>
+                  <input type="text" id="reg_poNumber" class="mono">
+                </div>
+                <div class="field">
+                  <label>Date Purchased</label>
+                  <input type="date" id="reg_datePurchased" required>
+                </div>
+                <div class="field">
+                  <label>Control Number (from CAD)</label>
+                  <input type="text" id="reg_controlNumber" class="mono" required>
+                </div>
+                <div class="field full">
+                  <label>Remarks</label>
+                  <textarea id="reg_remarks" placeholder="Optional notes"></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="registerBtn" style="width:auto;padding-left:28px;padding-right:28px;">Register Laptop</button>
+                <button type="reset" class="btn btn-ghost">Clear</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- TRANSFER VIEW -->
+        <div class="view" id="view-transfer">
+          <div class="topbar">
+            <div>
+              <h1>Transfer / Exit Clearance</h1>
+              <div class="sub">Reassign a laptop to a new employee, or process an exit clearance</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px;">
+            <h3><span class="ic">⌕</span> Find Laptop</h3>
+            <div class="search-bar" style="margin-bottom:0;">
+              <input type="text" id="transferLookup" class="mono" placeholder="Enter Serial No. or Control No.">
+              <button class="btn btn-primary" style="width:auto;padding-left:20px;padding-right:20px;" id="transferLookupBtn">Find</button>
+            </div>
+          </div>
+
+          <div class="card" id="transferFormCard" style="display:none;">
+            <div class="result-header">
+              <div>
+                <div style="font-size:13px;color:var(--text-dim);">Currently accountable to</div>
+                <div style="font-size:16px;font-weight:600;" id="transferCurrentOwner">—</div>
+              </div>
+              <span class="status-pill" id="transferCurrentStatus">—</span>
+            </div>
+
+            <div class="alert alert-success" id="transferSuccess">Transfer recorded successfully.</div>
+            <div class="alert alert-error" id="transferError"></div>
+
+            <form id="transferForm">
+              <div class="form-grid">
+                <div class="field full">
+                  <label>Reason for Transfer</label>
+                  <select id="tr_reason" required>
+                    <option value="">Select reason…</option>
+                    <option value="New Assignment">a. New Laptop / Reassignment — accountable to a new employee</option>
+                    <option value="Resigned">b. Resigned — employee separated, laptop returned for clearance</option>
+                  </select>
+                </div>
+                <div class="field" id="tr_toEmployeeField">
+                  <label>New Accountable Employee</label>
+                  <input type="text" id="tr_toEmployee">
+                </div>
+                <div class="field" id="tr_toEmployeeNoField">
+                  <label>New Employee No.</label>
+                  <input type="text" id="tr_toEmployeeNo">
+                </div>
+                <div class="field" id="tr_townshipField">
+                  <label>Township / Unit</label>
+                  <input type="text" id="tr_townshipUnit">
+                </div>
+                <div class="field full">
+                  <label>Remarks</label>
+                  <textarea id="tr_remarks" placeholder="Optional notes"></textarea>
+                </div>
+              </div>
+              <input type="hidden" id="tr_serialNo">
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="transferBtn" style="width:auto;padding-left:28px;padding-right:28px;">Process Transfer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- SEARCH VIEW -->
+        <div class="view" id="view-search">
+          <div class="topbar">
+            <div>
+              <h1>Search</h1>
+              <div class="sub">Look up a laptop's ownership history, or all units assigned to an employee</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:18px;">
+            <div class="search-bar">
+              <select id="searchType">
+                <option value="serial">By Serial / Control No.</option>
+                <option value="employee">By Employee No.</option>
+              </select>
+              <input type="text" id="searchQuery" class="mono" placeholder="Type to search…">
+              <button class="btn btn-primary" style="width:auto;padding-left:20px;padding-right:20px;" id="searchBtn">Search</button>
+            </div>
+          </div>
+
+          <div id="searchResults"></div>
+        </div>
+
+        <!-- INVENTORY VIEW -->
+        <div class="view" id="view-inventory">
+          <div class="topbar">
+            <div>
+              <h1>All Inventory</h1>
+              <div class="sub">Full laptop registry</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refreshInventoryBtn">Refresh</button>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Control No.</th><th>Serial No.</th><th>Brand / Model</th>
+                    <th>Accountable Employee</th><th>Emp. No.</th><th>Unit</th>
+                    <th>Purchased</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- CLEARANCE MODAL -->
+  <div class="modal-overlay" id="clearanceModal">
+    <div class="modal">
+      <div id="printArea">
+        <h3>Exit Clearance Generated</h3>
+        <div style="font-size:12.5px;color:var(--text-dim);">This laptop has been marked as returned. Print or save this slip for records.</div>
+        <div class="clearance-slip" id="clearanceSlipContent"></div>
+      </div>
+      <div class="form-actions" style="margin-top:18px;">
+        <button class="btn btn-primary" style="width:auto;" onclick="window.print()">Print Clearance</button>
+        <button class="btn btn-ghost" id="closeClearanceModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
