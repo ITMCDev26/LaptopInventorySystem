@@ -2,7 +2,7 @@
 // CONFIG — paste your deployed Apps Script Web App URL here.
 // (Deploy → New deployment → Web app → copy the URL it gives you.)
 // =====================================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbxeRx0-JglXsDhRAKbK4RWSJdCPNzdKo3c3kqTAfzU0oFUZMwcREEZ7NnPqWRD8a69SRQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzyfbajZj-zm_Dl_n8sNU9KTX1w-qAAxYQtmc2cDe534hrA0X6_wu6Y_gLHIQCjuvxicg/exec';
 
 (function(){
   let TOKEN = sessionStorage.getItem('laptopMgr_token') || null;
